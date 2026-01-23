@@ -1,0 +1,17 @@
+@import "tailwindcss";
+
+/* Set a consistent light background for the ERP dashboard */
+:root {
+  --background: #f8fafc; /* slate-50 */
+  --foreground: #0f172a; /* slate-900 */
+}
+
+/* Optional: If you want to force light mode regardless of system settings, 
+   remove the @media (prefers-color-scheme: dark) block entirely */
+
+body {
+  background: var(--background);
+  color: var(--foreground);
+  /* Use standard sans-serif font for better UI readability */
+  font-family: ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}

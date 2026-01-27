@@ -1,20 +1,14 @@
 // src/app/(dashboard)/admins/page.tsx
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { adminService } from "@/features/admins/services/adminApi";
-import {
-  Admin,
-  AdminListResponse,
-  UpdateAdminRequest,
-} from "@/features/admins/types";
+import { AdminListResponse, UpdateAdminRequest } from "@/features/admins/types";
 import AddAdminModal from "@/features/admins/components/AddAdminModal";
 import {
-  Loader2,
   Check,
   X,
   UserPlus,
-  ShieldCheck,
   Search,
   MoreVertical,
   UserMinus,
@@ -36,6 +30,9 @@ export default function AdminsPage() {
   const [editForm, setEditForm] = useState<UpdateAdminRequest>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  // Ref for click outside detection
+  const dropdownRef = useRef<HTMLDivElement>(null);
+
   const loadAdmins = useCallback(async () => {
     setLoading(true);
     try {
@@ -51,6 +48,25 @@ export default function AdminsPage() {
   useEffect(() => {
     loadAdmins();
   }, [loadAdmins]);
+
+  // Click outside to close dropdown
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
+        setActiveMenuId(null);
+      }
+    }
+
+    if (activeMenuId !== null) {
+      document.addEventListener("mousedown", handleClickOutside);
+      return () => {
+        document.removeEventListener("mousedown", handleClickOutside);
+      };
+    }
+  }, [activeMenuId]);
 
   const groupedPermissions = useMemo(() => {
     return (
@@ -192,7 +208,8 @@ export default function AdminsPage() {
                 return (
                   <tr
                     key={admin.id}
-                    className="hover:bg-slate-50/30 transition-colors"
+                    className="hover:bg-slate-50/30 transition-colors relative"
+                    style={{ zIndex: activeMenuId === admin.id ? 50 : 1 }}
                   >
                     <td className="p-5 sticky left-0 bg-white z-10 border-r border-slate-50">
                       <div className="flex items-center gap-3">
@@ -238,7 +255,6 @@ export default function AdminsPage() {
                                 ? editForm.permissions?.includes(permKey)
                                 : admin.permissions.includes(permKey);
 
-                              // 1. Define colors for View Mode (text color)
                               const color =
                                 action === "read"
                                   ? "text-blue-600"
@@ -246,7 +262,6 @@ export default function AdminsPage() {
                                     ? "text-amber-500"
                                     : "text-red-500";
 
-                              // 2. Define colors for Edit Mode (checkbox accent color) [Fix applies here]
                               const accentColor =
                                 action === "read"
                                   ? "accent-blue-600"
@@ -255,17 +270,14 @@ export default function AdminsPage() {
                                     : "accent-red-500";
 
                               return isEditing ? (
-                                // Edit Mode: Native Checkbox with dynamic accent color
                                 <input
                                   key={action}
                                   type="checkbox"
                                   checked={isChecked}
                                   onChange={() => togglePermission(permKey)}
-                                  // Use dynamic accentColor here instead of hardcoded accent-blue-600
                                   className={`w-5 h-5 rounded ${accentColor} cursor-pointer transition-transform active:scale-95`}
                                 />
                               ) : (
-                                // View Mode: Styled Indicator
                                 <div
                                   key={action}
                                   className={`w-5 h-5 rounded flex items-center justify-center border transition-all ${isChecked ? `${color} border-current bg-current/10` : "border-slate-200"}`}
@@ -298,7 +310,10 @@ export default function AdminsPage() {
                           </button>
                         </div>
                       ) : (
-                        <div className="relative inline-block">
+                        <div
+                          className="relative inline-block"
+                          ref={activeMenuId === admin.id ? dropdownRef : null}
+                        >
                           <button
                             onClick={(e) => {
                               e.stopPropagation();

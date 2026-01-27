@@ -1,13 +1,20 @@
 // src/features/admins/services/adminApi.ts
 import apiClient from "@/lib/axios";
-import { AdminListResponse, UpdateAdminRequest, RegisterAdminRequest } from "../types";
+import {
+  AdminListResponse,
+  UpdateAdminRequest,
+  RegisterAdminRequest,
+} from "../types";
 
 export const adminService = {
   // Combined getter with status parameter
   getAdmins: async (status?: string) => {
-    const response = await apiClient.get<{ data: AdminListResponse }>("/auth/admins", {
-      params: { status } // Axios automatically handles the ?status= query
-    });
+    const response = await apiClient.get<{ data: AdminListResponse }>(
+      "/auth/admins",
+      {
+        params: { status }, // Axios automatically handles the ?status= query
+      },
+    );
     return response.data.data;
   },
 
@@ -29,5 +36,5 @@ export const adminService = {
 
   restoreAdmin: async (adminId: number) => {
     return apiClient.post(`/auth/admin/${adminId}/restore`);
-  }
+  },
 };

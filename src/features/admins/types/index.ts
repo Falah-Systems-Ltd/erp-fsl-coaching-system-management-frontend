@@ -30,3 +30,19 @@ export interface UpdateAdminRequest {
   permissions?: string[];
   isActive?: boolean;
 }
+
+export interface Preset {
+  id: number;
+  name: string;
+  permissions: string[];
+}
+
+export interface CreatePresetRequest {
+  name: string;
+  permissions: string[];
+}
+
+export interface UpdatePresetRequest {
+  name?: string;
+  permissions?: string[];
+}

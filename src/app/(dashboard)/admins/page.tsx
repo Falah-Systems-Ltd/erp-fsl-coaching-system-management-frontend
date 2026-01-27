@@ -3,12 +3,15 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { adminService } from "@/features/admins/services/adminApi";
-import { AdminListResponse, UpdateAdminRequest } from "@/features/admins/types";
+import { 
+  AdminListResponse,
+  UpdateAdminRequest,
+} from "@/features/admins/types";
 import AddAdminModal from "@/features/admins/components/AddAdminModal";
-import {
+import { 
   Check,
   X,
-  UserPlus,
+  UserPlus, 
   Search,
   MoreVertical,
   UserMinus,
@@ -29,7 +32,7 @@ export default function AdminsPage() {
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<UpdateAdminRequest>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  
   // Ref for click outside detection
   const dropdownRef = useRef<HTMLDivElement>(null);
 
@@ -52,10 +55,7 @@ export default function AdminsPage() {
   // Click outside to close dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (
-        dropdownRef.current &&
-        !dropdownRef.current.contains(event.target as Node)
-      ) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setActiveMenuId(null);
       }
     }
@@ -92,13 +92,33 @@ export default function AdminsPage() {
     );
   }, [data, searchQuery]);
 
-  // Restored Toggle Permission Logic
+  // Updated Toggle Permission Logic with Cascading Selection
   const togglePermission = (perm: string) => {
-    const current = editForm.permissions || [];
-    const updated = current.includes(perm)
-      ? current.filter((p) => p !== perm)
-      : [...current, perm];
-    setEditForm({ ...editForm, permissions: updated });
+    const [module, action] = perm.split(":");
+    let currentPerms = [...(editForm.permissions || [])];
+    const isAdding = !currentPerms.includes(perm);
+
+    if (isAdding) {
+      // Cascading Addition
+      currentPerms.push(perm);
+      if (action === "write") {
+        if (!currentPerms.includes(`${module}:read`)) currentPerms.push(`${module}:read`);
+      }
+      if (action === "delete") {
+        if (!currentPerms.includes(`${module}:read`)) currentPerms.push(`${module}:read`);
+        if (!currentPerms.includes(`${module}:write`)) currentPerms.push(`${module}:write`);
+      }
+    } else {
+      // Cascading Removal
+      currentPerms = currentPerms.filter((p) => p !== perm);
+      if (action === "read") {
+        currentPerms = currentPerms.filter((p) => p !== `${module}:write` && p !== `${module}:delete`);
+      }
+      if (action === "write") {
+        currentPerms = currentPerms.filter((p) => p !== `${module}:delete`);
+      }
+    }
+    setEditForm({ ...editForm, permissions: [...new Set(currentPerms)] });
   };
 
   const saveEdit = async () => {
@@ -187,9 +207,11 @@ export default function AdminsPage() {
                       {module}
                     </span>
                     <div className="flex justify-center gap-3 mt-2 font-bold text-slate-400 text-[8px]">
-                      {actions.map((a) => (
-                        <span key={a}>{a[0].toUpperCase()}</span>
-                      ))}
+                      {["read", "write", "delete"]
+                        .filter(a => actions.includes(a))
+                        .map((a) => (
+                          <span key={a}>{a[0].toUpperCase()}</span>
+                        ))}
                     </div>
                   </th>
                 ))}
@@ -219,7 +241,7 @@ export default function AdminsPage() {
                         <div>
                           {isEditing ? (
                             <input
-                              className="border border-blue-200 p-1 rounded text-xs w-32"
+                              className="border border-blue-200 p-1 rounded text-xs w-32 outline-none focus:ring-1 focus:ring-blue-500"
                               value={editForm.name}
                               onChange={(e) =>
                                 setEditForm({
@@ -249,45 +271,47 @@ export default function AdminsPage() {
                           className="p-4 border-l border-slate-50"
                         >
                           <div className="flex justify-center gap-3">
-                            {actions.map((action) => {
-                              const permKey = `${module}:${action}`;
-                              const isChecked = isEditing
-                                ? editForm.permissions?.includes(permKey)
-                                : admin.permissions.includes(permKey);
+                            {["read", "write", "delete"]
+                              .filter(action => actions.includes(action))
+                              .map((action) => {
+                                const permKey = `${module}:${action}`;
+                                const isChecked = isEditing
+                                  ? editForm.permissions?.includes(permKey)
+                                  : admin.permissions.includes(permKey);
 
-                              const color =
-                                action === "read"
-                                  ? "text-blue-600"
-                                  : action === "write"
-                                    ? "text-amber-500"
-                                    : "text-red-500";
+                                const color =
+                                  action === "read"
+                                    ? "text-blue-600"
+                                    : action === "write"
+                                      ? "text-amber-500"
+                                      : "text-red-500";
 
-                              const accentColor =
-                                action === "read"
-                                  ? "accent-blue-600"
-                                  : action === "write"
-                                    ? "accent-amber-500"
-                                    : "accent-red-500";
+                                const accentColor =
+                                  action === "read"
+                                    ? "accent-blue-600"
+                                    : action === "write"
+                                      ? "accent-amber-500"
+                                      : "accent-red-500";
 
-                              return isEditing ? (
-                                <input
-                                  key={action}
-                                  type="checkbox"
-                                  checked={isChecked}
-                                  onChange={() => togglePermission(permKey)}
-                                  className={`w-5 h-5 rounded ${accentColor} cursor-pointer transition-transform active:scale-95`}
-                                />
-                              ) : (
-                                <div
-                                  key={action}
-                                  className={`w-5 h-5 rounded flex items-center justify-center border transition-all ${isChecked ? `${color} border-current bg-current/10` : "border-slate-200"}`}
-                                >
-                                  {isChecked && (
-                                    <Check size={12} strokeWidth={4} />
-                                  )}
-                                </div>
-                              );
-                            })}
+                                return isEditing ? (
+                                  <input
+                                    key={action}
+                                    type="checkbox"
+                                    checked={isChecked}
+                                    onChange={() => togglePermission(permKey)}
+                                    className={`w-5 h-5 rounded ${accentColor} cursor-pointer transition-transform active:scale-95`}
+                                  />
+                                ) : (
+                                  <div
+                                    key={action}
+                                    className={`w-5 h-5 rounded flex items-center justify-center border transition-all ${isChecked ? `${color} border-current bg-current/10` : "border-slate-200"}`}
+                                  >
+                                    {isChecked && (
+                                      <Check size={12} strokeWidth={4} />
+                                    )}
+                                  </div>
+                                );
+                              })}
                           </div>
                         </td>
                       ),
@@ -298,22 +322,19 @@ export default function AdminsPage() {
                         <div className="flex justify-end gap-2">
                           <button
                             onClick={saveEdit}
-                            className="text-green-600 hover:bg-green-50 p-1 rounded"
+                            className="text-green-600 hover:bg-green-50 p-1 rounded transition-colors"
                           >
                             <Check size={20} />
                           </button>
                           <button
                             onClick={() => setEditingId(null)}
-                            className="text-red-600 hover:bg-red-50 p-1 rounded"
+                            className="text-red-600 hover:bg-red-50 p-1 rounded transition-colors"
                           >
                             <X size={20} />
                           </button>
                         </div>
                       ) : (
-                        <div
-                          className="relative inline-block"
-                          ref={activeMenuId === admin.id ? dropdownRef : null}
-                        >
+                        <div className="relative inline-block" ref={activeMenuId === admin.id ? dropdownRef : null}>
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -321,7 +342,7 @@ export default function AdminsPage() {
                                 activeMenuId === admin.id ? null : admin.id,
                               );
                             }}
-                            className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg"
+                            className="p-2 text-slate-400 hover:bg-slate-100 rounded-lg transition-colors"
                           >
                             <MoreVertical size={20} />
                           </button>
@@ -335,7 +356,7 @@ export default function AdminsPage() {
                                     onClick={() =>
                                       handleAction(admin.id, "restore")
                                     }
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-green-600 hover:bg-green-50 rounded-lg"
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-green-600 hover:bg-green-50 rounded-lg transition-colors"
                                   >
                                     <RotateCcw size={14} /> Restore Admin
                                   </button>
@@ -343,7 +364,7 @@ export default function AdminsPage() {
                                     onClick={() =>
                                       handleAction(admin.id, "hard-delete")
                                     }
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg"
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                   >
                                     <Trash2 size={14} /> Delete Permanently
                                   </button>
@@ -359,7 +380,7 @@ export default function AdminsPage() {
                                       });
                                       setActiveMenuId(null);
                                     }}
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 rounded-lg"
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-50 rounded-lg transition-colors"
                                   >
                                     <Edit3 size={14} /> Edit Permissions
                                   </button>
@@ -370,7 +391,7 @@ export default function AdminsPage() {
                                         admin.isActive ? "block" : "activate",
                                       )
                                     }
-                                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg ${admin.isActive ? "text-amber-600 hover:bg-amber-50" : "text-green-600 hover:bg-green-50"}`}
+                                    className={`w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold rounded-lg transition-colors ${admin.isActive ? "text-amber-600 hover:bg-amber-50" : "text-green-600 hover:bg-green-50"}`}
                                   >
                                     <Ban size={14} />{" "}
                                     {admin.isActive
@@ -381,7 +402,7 @@ export default function AdminsPage() {
                                     onClick={() =>
                                       handleAction(admin.id, "soft-delete")
                                     }
-                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg"
+                                    className="w-full flex items-center gap-2 px-3 py-2 text-xs font-semibold text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                   >
                                     <UserMinus size={14} /> Move to Deleted
                                   </button>

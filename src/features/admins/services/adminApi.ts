@@ -10,31 +10,31 @@ export const adminService = {
   // Combined getter with status parameter
   getAdmins: async (status?: string) => {
     const response = await apiClient.get<{ data: AdminListResponse }>(
-      "/auth/admins",
+      "/admin", // Changed from /auth/admins
       {
-        params: { status }, // Axios automatically handles the ?status= query
+        params: { status },
       },
     );
     return response.data.data;
   },
 
   registerAdmin: async (data: RegisterAdminRequest) => {
-    return apiClient.post("/auth/register-admin", data);
+    return apiClient.post("/admin/register", data);
   },
 
   updateAdmin: async (adminId: number, data: UpdateAdminRequest) => {
-    return apiClient.put(`/auth/admin/${adminId}`, data);
+    return apiClient.put(`/admin/${adminId}`, data); 
   },
 
   softDeleteAdmin: async (adminId: number) => {
-    return apiClient.delete(`/auth/admin/${adminId}`);
+    return apiClient.delete(`/admin/${adminId}`);
   },
 
   permanentDeleteAdmin: async (adminId: number) => {
-    return apiClient.delete(`/auth/admin/${adminId}/permanent`);
+    return apiClient.delete(`/admin/${adminId}/permanent`);
   },
 
   restoreAdmin: async (adminId: number) => {
-    return apiClient.post(`/auth/admin/${adminId}/restore`);
+    return apiClient.post(`/admin/${adminId}/restore`);
   },
 };

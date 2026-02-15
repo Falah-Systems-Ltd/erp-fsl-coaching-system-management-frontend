@@ -3,15 +3,12 @@
 
 import { useEffect, useState, useCallback, useMemo, useRef } from "react";
 import { adminService } from "@/features/admins/services/adminApi";
-import { 
-  AdminListResponse,
-  UpdateAdminRequest,
-} from "@/features/admins/types";
+import { AdminListResponse, UpdateAdminRequest } from "@/features/admins/types";
 import AddAdminModal from "@/features/admins/components/AddAdminModal";
-import { 
+import {
   Check,
   X,
-  UserPlus, 
+  UserPlus,
   Search,
   MoreVertical,
   UserMinus,
@@ -19,6 +16,7 @@ import {
   Edit3,
   RotateCcw,
   Trash2,
+  Info,
 } from "lucide-react";
 
 type FilterStatus = "active" | "blocked" | "deleted";
@@ -32,8 +30,7 @@ export default function AdminsPage() {
   const [activeMenuId, setActiveMenuId] = useState<number | null>(null);
   const [editForm, setEditForm] = useState<UpdateAdminRequest>({});
   const [isModalOpen, setIsModalOpen] = useState(false);
-  
-  // Ref for click outside detection
+
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const loadAdmins = useCallback(async () => {
@@ -52,10 +49,12 @@ export default function AdminsPage() {
     loadAdmins();
   }, [loadAdmins]);
 
-  // Click outside to close dropdown
   useEffect(() => {
     function handleClickOutside(event: MouseEvent) {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
+      if (
+        dropdownRef.current &&
+        !dropdownRef.current.contains(event.target as Node)
+      ) {
         setActiveMenuId(null);
       }
     }
@@ -92,27 +91,32 @@ export default function AdminsPage() {
     );
   }, [data, searchQuery]);
 
-  // Updated Toggle Permission Logic with Cascading Selection
   const togglePermission = (perm: string) => {
     const [module, action] = perm.split(":");
     let currentPerms = [...(editForm.permissions || [])];
     const isAdding = !currentPerms.includes(perm);
 
     if (isAdding) {
-      // Cascading Addition
       currentPerms.push(perm);
+      if (action === "read") {
+        // No auto-cascade for read in this logic
+      }
       if (action === "write") {
-        if (!currentPerms.includes(`${module}:read`)) currentPerms.push(`${module}:read`);
+        if (!currentPerms.includes(`${module}:read`))
+          currentPerms.push(`${module}:read`);
       }
       if (action === "delete") {
-        if (!currentPerms.includes(`${module}:read`)) currentPerms.push(`${module}:read`);
-        if (!currentPerms.includes(`${module}:write`)) currentPerms.push(`${module}:write`);
+        if (!currentPerms.includes(`${module}:read`))
+          currentPerms.push(`${module}:read`);
+        if (!currentPerms.includes(`${module}:write`))
+          currentPerms.push(`${module}:write`);
       }
     } else {
-      // Cascading Removal
       currentPerms = currentPerms.filter((p) => p !== perm);
       if (action === "read") {
-        currentPerms = currentPerms.filter((p) => p !== `${module}:write` && p !== `${module}:delete`);
+        currentPerms = currentPerms.filter(
+          (p) => p !== `${module}:write` && p !== `${module}:delete`,
+        );
       }
       if (action === "write") {
         currentPerms = currentPerms.filter((p) => p !== `${module}:delete`);
@@ -154,6 +158,7 @@ export default function AdminsPage() {
 
   return (
     <div className="space-y-6 pb-40">
+      {/* Header & Filter Bar */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold text-slate-900">Administrators</h1>
         <div className="flex items-center gap-3">
@@ -163,7 +168,7 @@ export default function AdminsPage() {
                 <button
                   key={status}
                   onClick={() => setStatusFilter(status)}
-                  className={`px-4 py-1.5 rounded-lg text-xs font-bold uppercase transition-all ${statusFilter === status ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
+                  className={`px-4 py-1.5 h-10 rounded-lg text-xs font-bold uppercase transition-all ${statusFilter === status ? "bg-white text-blue-600 shadow-sm" : "text-slate-500 hover:text-slate-700"}`}
                 >
                   {status}
                 </button>
@@ -177,19 +182,20 @@ export default function AdminsPage() {
             />
             <input
               placeholder="Search..."
-              className="pl-9 pr-4 py-2 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 w-64 text-sm bg-white"
+              className="pl-9 pr-4 h-10 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 w-64 text-sm bg-white"
               onChange={(e) => setSearchQuery(e.target.value)}
             />
           </div>
           <button
             onClick={() => setIsModalOpen(true)}
-            className="bg-blue-600 text-white px-5 py-2 rounded-xl font-bold flex items-center gap-2"
+            className="bg-blue-600 text-white px-5 h-10 rounded-xl font-bold flex items-center gap-2 shadow-lg shadow-blue-100 active:scale-95 transition-all"
           >
             <UserPlus size={18} /> Add Admin
           </button>
         </div>
       </div>
 
+      {/* Main Table Container */}
       <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-visible">
         <div className="overflow-x-auto overflow-y-visible">
           <table className="w-full text-left border-collapse min-w-[1000px] overflow-visible">
@@ -208,7 +214,7 @@ export default function AdminsPage() {
                     </span>
                     <div className="flex justify-center gap-3 mt-2 font-bold text-slate-400 text-[8px]">
                       {["read", "write", "delete"]
-                        .filter(a => actions.includes(a))
+                        .filter((a) => actions.includes(a))
                         .map((a) => (
                           <span key={a}>{a[0].toUpperCase()}</span>
                         ))}
@@ -272,7 +278,7 @@ export default function AdminsPage() {
                         >
                           <div className="flex justify-center gap-3">
                             {["read", "write", "delete"]
-                              .filter(action => actions.includes(action))
+                              .filter((action) => actions.includes(action))
                               .map((action) => {
                                 const permKey = `${module}:${action}`;
                                 const isChecked = isEditing
@@ -334,7 +340,10 @@ export default function AdminsPage() {
                           </button>
                         </div>
                       ) : (
-                        <div className="relative inline-block" ref={activeMenuId === admin.id ? dropdownRef : null}>
+                        <div
+                          className="relative inline-block"
+                          ref={activeMenuId === admin.id ? dropdownRef : null}
+                        >
                           <button
                             onClick={(e) => {
                               e.stopPropagation();
@@ -419,7 +428,42 @@ export default function AdminsPage() {
             </tbody>
           </table>
         </div>
+
+        {/* Dynamic Legend / Key */}
+        <div className="bg-slate-50/50 border-t border-slate-100 p-4 flex flex-wrap items-center justify-end pr-10 gap-6">
+          <div className="flex items-center gap-2 text-slate-400">
+            <Info size={14} />
+            <span className="text-[10px] font-bold uppercase tracking-widest">
+              Permission Key:
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-4 h-4 rounded-md bg-blue-100 text-blue-600 flex items-center justify-center text-[9px] font-black">
+              R
+            </span>
+            <span className="text-[11px] font-semibold text-slate-600">
+              Read
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-4 h-4 rounded-md bg-amber-100 text-amber-600 flex items-center justify-center text-[9px] font-black">
+              W
+            </span>
+            <span className="text-[11px] font-semibold text-slate-600">
+              Write
+            </span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="w-4 h-4 rounded-md bg-red-100 text-red-600 flex items-center justify-center text-[9px] font-black">
+              D
+            </span>
+            <span className="text-[11px] font-semibold text-slate-600">
+              Delete
+            </span>
+          </div>
+        </div>
       </div>
+
       {data && (
         <AddAdminModal
           isOpen={isModalOpen}

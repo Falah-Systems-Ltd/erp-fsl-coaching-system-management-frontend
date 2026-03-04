@@ -236,7 +236,7 @@ export default function AdminsPage() {
                 return (
                   <tr
                     key={admin.id}
-                    className="hover:bg-slate-50/30 transition-colors relative"
+                    className="hover:bg-blue-50/40 transition-colors relative"
                     style={{ zIndex: activeMenuId === admin.id ? 50 : 1 }}
                   >
                     <td className="p-5 sticky left-0 bg-white z-10 border-r border-slate-50">

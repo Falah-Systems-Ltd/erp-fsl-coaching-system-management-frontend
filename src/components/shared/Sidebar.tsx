@@ -1,21 +1,25 @@
-// src/components/shared/Sidebar.tsx
 "use client";
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useAuth } from "@/features/auth/context/AuthContext";
-import { MENU_STRUCTURE } from "@/config/menu-config";
-// 1. Import LucideIcon type
+import { useAuth , MenuSection, MenuItem} from "@/features/auth/context/AuthContext"; 
+
 import { 
   LayoutDashboard, 
-  ShieldCheck, 
-  Users, 
-  UserSquare2, 
+  Shield, 
+  UserCog, 
+  Users,
+  UserCheck, 
+  GraduationCap,
   ClipboardCheck, 
-  School,
+  BookOpen,
+  FileText,
+  DollarSign,
+  BarChart,
+  Award,
+  Calendar,
   ChevronLeft,
   ChevronRight,
-  GraduationCap,
   LucideIcon 
 } from "lucide-react";
 
@@ -24,21 +28,33 @@ interface SidebarProps {
   toggleSidebar: () => void;
 }
 
-// 2. Explicitly type the Record as <string, LucideIcon>
+// 2. Map the exact string your Spring Boot backend sends to the Lucide component
 const IconMap: Record<string, LucideIcon> = {
-  dashboard: LayoutDashboard,
-  admins: ShieldCheck,
-  students: Users,
-  teachers: UserSquare2,
-  attendance: ClipboardCheck,
-  classes: School
+  LayoutDashboard: LayoutDashboard,
+  Shield: Shield,
+  UserCog: UserCog,
+  Users: Users,
+  UserCheck: UserCheck,
+  GraduationCap: GraduationCap,
+  ClipboardCheck: ClipboardCheck,
+  BookOpen: BookOpen,
+  FileText: FileText,
+  DollarSign: DollarSign,
+  BarChart: BarChart,
+  Award: Award,
+  Calendar: Calendar,
 };
 
 export default function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
   const pathname = usePathname();
-  const { permissions, userRole } = useAuth();
+  
+  // 3. Pull the dynamic menu array directly from your Auth Context
+  const { menu } = useAuth(); 
 
-  const hasAccess = (perm: string) => userRole === "SUPER_ADMIN" || permissions.includes(perm);
+  // Fallback while loading or if menu is missing
+  if (!menu || menu.length === 0) {
+    return null; // Or a loading skeleton
+  }
 
   return (
     <aside className={`
@@ -62,11 +78,8 @@ export default function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
       </div>
 
       <div className="flex-1 overflow-y-auto py-6 space-y-8 no-scrollbar">
-        {MENU_STRUCTURE.map((group) => {
-          const visibleItems = group.items.filter(item => hasAccess(item.permission));
-          if (visibleItems.length === 0) return null;
-
-          return (
+        {/* 4. Map directly over the backend array. No filtering needed! */}
+        {menu.map((group: MenuSection) => (
             <div key={group.section} className="px-4">
               {!isCollapsed && (
                 <p className="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-4 px-3">
@@ -74,9 +87,10 @@ export default function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
                 </p>
               )}
               <div className="space-y-1">
-                {visibleItems.map((item) => {
-                  // 3. TypeScript now knows Icon is a valid Lucide component
-                  const Icon = IconMap[item.iconKey] || LayoutDashboard;
+                {group.items.map((item: MenuItem) => {
+                  
+                  // Match backend string to icon, default to LayoutDashboard if mismatch
+                  const Icon = IconMap[item.icon] || LayoutDashboard; 
                   const isActive = pathname === item.href;
                   
                   return (
@@ -104,8 +118,7 @@ export default function Sidebar({ isCollapsed, toggleSidebar }: SidebarProps) {
                 })}
               </div>
             </div>
-          );
-        })}
+          ))}
       </div>
       
       {/* Sidebar Footer Support Card */}

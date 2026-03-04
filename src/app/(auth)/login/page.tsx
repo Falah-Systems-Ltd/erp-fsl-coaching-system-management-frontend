@@ -14,20 +14,34 @@ export default function LoginPage() {
   const [password, setPassword] = useState("");
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
+ const handleLogin = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setIsLoading(true);
 
     try {
       const response = await authService.login({ email, password });
-      const { token, name, role } = response.data.data;
+      
+      // 1. Destructure permissions and menu from the response data
+      const { token, name, role, permissions, menu } = response.data.data;
 
       if (token) {
         localStorage.setItem("token", token);
         localStorage.setItem("userName", name);
         localStorage.setItem("userRole", role);
+        
+        // 2. Stringify and store the arrays so AuthContext can parse them
+        if (permissions) {
+          localStorage.setItem("permissions", JSON.stringify(permissions));
+        }
+        if (menu) {
+          localStorage.setItem("menu", JSON.stringify(menu));
+        }
 
         toast.success(`Welcome back, ${name}!`);
+        
+        // 3. Redirect to dashboard
+        // Note: Because your AuthContext watches for route changes, 
+        // this will trigger the context to read the new localStorage values.
         router.push("/");
       }
     } catch (err) {
